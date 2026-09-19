@@ -68,8 +68,8 @@ else:
 
 print(f"Using device: {device}")
 
-#load the EfficientNet model
-model = models.efficientnet_b0(pretrained=True)
+# Load EfficientNet-B0 with the current default ImageNet pretrained weights.
+model = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.DEFAULT)
 
 num_classes = len(full_dataset.classes)
 
