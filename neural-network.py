@@ -7,11 +7,19 @@ Original file is located at
 import matplotlib.pyplot as plt
 import os
 import shutil
+import ssl
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import certifi
 from torch.utils.data import DataLoader
 from torchvision import transforms
+
+# The macOS framework Python may not be configured with a CA bundle.  Configure
+# urllib (which TorchVision uses to download pretrained weights) to use
+# Certifi's verified certificate bundle rather than bypassing TLS verification.
+ssl_context = ssl.create_default_context(cafile=certifi.where())
+ssl._create_default_https_context = lambda: ssl_context
 
 
 
@@ -49,10 +57,13 @@ val_size = int(0.1 * len(full_dataset))
 test_size = len(full_dataset) - train_size - val_size
 train_dataset, val_dataset, test_dataset = random_split(full_dataset, [train_size, val_size, test_size]) #this divides all the images into smaller folders
 
-#dataloaders
-train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=2)
-val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=2)
-test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=2)
+# Data loaders.  On macOS, worker processes use "spawn" and would re-run this
+# top-level script unless the whole program is placed behind a __main__ guard.
+# Use the main process for loading so the script runs reliably everywhere.
+num_workers = 0
+train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=num_workers)
+val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=num_workers)
+test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=num_workers)
 
 
 
@@ -63,8 +74,10 @@ from torchvision import models
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") #uses gpu, cpu when not available
 print(f"Using device: {device}")
 
-#load the EfficientNet model
-model = models.efficientnet_b0(pretrained=True)
+# Load ImageNet-trained EfficientNet weights.  This download is cached by
+# TorchVision, so it normally happens only once.
+weights = models.EfficientNet_B0_Weights.DEFAULT
+model = models.efficientnet_b0(weights=weights)
 
 num_classes = len(full_dataset.classes)
 
@@ -81,8 +94,14 @@ optimizer = optim.Adam(model.classifier.parameters(), lr=0.001) #might add weigh
 
 
 """ model training """
-from tqdm.notebook import tqdm #progress bar
-from IPython.display import clear_output #plotting
+from tqdm.auto import tqdm  # Works in both notebooks and terminals.
+
+try:
+    from IPython.display import clear_output
+except ImportError:
+    # IPython is optional when this script is run outside a notebook.
+    def clear_output(*args, **kwargs):
+        pass
 
 # training loop
 num_epochs = 10 #adjust this?
