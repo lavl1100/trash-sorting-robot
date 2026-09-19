@@ -59,7 +59,13 @@ test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers
 #use EfficentNet B0 for transfer learning
 from torchvision import models
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu") #uses gpu, cpu when not available
+if torch.backends.mps.is_available():
+    device = torch.device("mps")       # Apple GPU
+elif torch.cuda.is_available():
+    device = torch.device("cuda")      # NVIDIA GPU
+else:
+    device = torch.device("cpu")
+
 print(f"Using device: {device}")
 
 #load the EfficientNet model
