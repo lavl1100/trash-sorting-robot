@@ -86,8 +86,7 @@ optimizer = optim.Adam(model.classifier.parameters(), lr=0.001) #might add weigh
 
 
 """ model training """
-from tqdm.notebook import tqdm #progress bar
-from IPython.display import clear_output #plotting
+from tqdm.auto import tqdm # progress bar for notebooks and regular Python scripts
 
 # training loop
 num_epochs = 10 #adjust this?
@@ -163,7 +162,10 @@ for epoch in range(num_epochs):
     print(f"Epoch {epoch_num}/{num_epochs}, Train Loss: {epoch_loss:.4f}, Train Accuracy: {epoch_train_accuracy:.4f}, Val Loss: {val_epoch_loss:.4f}, Val Accuracy: {val_accuracy:.4f}")
 
     #plotting after each epoch
-    clear_output(wait=True)
+    # This script may run outside Jupyter, where IPython's ``clear_output`` is
+    # unavailable. Clearing the Matplotlib figure gives the same refreshed plot
+    # without adding a notebook-only dependency.
+    plt.clf()
     plt.subplot(1, 2, 1)
     plt.plot(range(1, len(train_accuracies) + 1), [acc * 100 for acc in train_accuracies], label='Train Accuracy')
     plt.plot(range(1, len(val_accuracies) + 1), [acc * 100 for acc in val_accuracies], label='Validation Accuracy')
